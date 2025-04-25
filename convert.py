@@ -3,7 +3,7 @@ import json
 import urllib.request
 
 # Replace this with your Google Sheet export link (CSV format)
-CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSKT85C6cZdhhjob-pnRUk6HvSLjZVK3yizUiB_Qb0kuYDt883Z6m5Oc3LL1lLlTNwP_fIkwFnQ2DyK/pubhtml"
+CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSKT85C6cZdhhjob-pnRUk6HvSLjZVK3yizUiB_Qb0kuYDt883Z6m5Oc3LL1lLlTNwP_fIkwFnQ2DyK/pub?output=csv"
 
 with urllib.request.urlopen(CSV_URL) as response:
     lines = [l.decode('utf-8') for l in response.readlines()]
