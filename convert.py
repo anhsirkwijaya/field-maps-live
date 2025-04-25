@@ -3,7 +3,7 @@ import json
 import urllib.request
 
 # URL to your published Google Sheet as CSV
-CSV_URL = "https://docs.google.com/spreadsheets/d/1z8Xg20thWKyh-LyG04MLjnKzuCgFFgdsepIvMpqOGP8/export?format=csv"
+CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSKT85C6cZdhhjob-pnRUk6HvSLjZVK3yizUiB_Qb0kuYDt883Z6m5Oc3LL1lLlTNwP_fIkwFnQ2DyK/pub?output=csv"
 
 # Output file name
 OUTPUT_FILE = "data.geojson"
