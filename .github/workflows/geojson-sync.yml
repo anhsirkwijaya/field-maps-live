@@ -1,33 +1,61 @@
-name: Sync GeoJSON from Google Sheets
+name: Sync Google Sheet to GeoJSON
 
 on:
-  push:
+  workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *"  # every 6 hours
+    - cron: "0 1 * * *"  # Runs daily at 01:00 UTC
 
 jobs:
-  build:
+  fetch-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: '3.x'
 
       - name: Install dependencies
-        run: pip install --upgrade pip
+        run: pip install pandas geojson
 
-      - name: Run convert.py to update GeoJSON
-        run: python convert.py
-
-      - name: Commit and push changes
+      - name: Download CSV from Google Sheets and convert to GeoJSON
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.geojson
-          git diff --cached --quiet || git commit -m "🔄 Update data.geojson from Google Sheets"
+          mkdir -p output
+          curl -L "https://docs.google.com/spreadsheets/d/1z8Xg20thWKyh-LyG04MLjnKzuCgFFgdsepIvMpqOGP8/export?format=csv&gid=0" -o data.csv
+          
+          python <<EOF
+import pandas as pd, geojson, json
+
+df = pd.read_csv("data.csv")
+
+features = []
+for _, row in df.iterrows():
+    try:
+        geom = json.loads(row["geometry"])  # assumes 'geometry' column in GeoJSON format
+        feat = geojson.Feature(geometry=geom, properties=row.drop("geometry").to_dict())
+        features.append(feat)
+    except Exception as e:
+        print("Skipped row due to error:", e)
+
+fc = geojson.FeatureCollection(features)
+
+with open("output/data.geojson", "w") as f:
+    geojson.dump(fc, f, indent=2)
+EOF
+
+      - name: Commit GeoJSON file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add output/data.geojson
+          git commit -m "Update GeoJSON from Google Sheet" || echo "No changes"
           git push
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./output
