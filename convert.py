@@ -2,38 +2,48 @@ import csv
 import json
 import urllib.request
 
-# Replace this with your Google Sheet export link (CSV format)
-CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSKT85C6cZdhhjob-pnRUk6HvSLjZVK3yizUiB_Qb0kuYDt883Z6m5Oc3LL1lLlTNwP_fIkwFnQ2DyK/pub?output=csv"
+# URL to your published Google Sheet as CSV
+CSV_URL = "https://docs.google.com/spreadsheets/d/1z8Xg20thWKyh-LyG04MLjnKzuCgFFgdsepIvMpqOGP8/export?format=csv"
 
-with urllib.request.urlopen(CSV_URL) as response:
-    lines = [l.decode('utf-8') for l in response.readlines()]
+# Output file name
+OUTPUT_FILE = "data.geojson"
+
+def convert_csv_to_geojson(csv_url, output_file):
+    response = urllib.request.urlopen(csv_url)
+    lines = [line.decode('utf-8') for line in response.readlines()]
     reader = csv.DictReader(lines)
 
     features = []
+
     for row in reader:
         try:
-            coords = json.loads(row["geometry"])
+            geometry = json.loads(row["geometry"])  # Convert geometry string to list
             feature = {
                 "type": "Feature",
                 "geometry": {
                     "type": "Polygon",
-                    "coordinates": coords
+                    "coordinates": geometry
                 },
                 "properties": {
-                    "field_officer": row.get("field_officer", ""),
-                    "area_name": row.get("area_name", ""),
-                    "photo_url": row.get("photo_url", "")
+                    "field_officer": row["field_officer"],
+                    "area_name": row["area_name"],
+                    "photo_url": row["photo_url"]
                 }
             }
             features.append(feature)
         except Exception as e:
-            print("Error processing row:", e)
-            continue
+            print(f"Skipping row due to error: {e}")
 
     geojson = {
         "type": "FeatureCollection",
         "features": features
     }
 
-    with open("data.geojson", "w") as f:
-        json.dump(geojson, f, indent=2)
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(geojson, f, ensure_ascii=False, indent=2)
+
+    print(f"✅ GeoJSON written to {output_file}")
+
+# Run the function
+if __name__ == "__main__":
+    convert_csv_to_geojson(CSV_URL, OUTPUT_FILE)
