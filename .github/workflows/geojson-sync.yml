@@ -1,16 +1,16 @@
-name: Update GeoJSON from Google Sheet
+name: Sync Google Sheet to GeoJSON
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # every day at midnight UTC
   workflow_dispatch:
+  schedule:
+    - cron: "0 1 * * *"  # Runs daily at 01:00 UTC
 
 jobs:
-  build:
+  fetch-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -18,14 +18,21 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Convert CSV to GeoJSON
-        run: |
-          python convert.py
+      - name: Install dependencies
+        run: pip install pandas geojson
 
-      - name: Commit GeoJSON
+      - name: Download CSV from Google Sheets and convert to GeoJSON
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add data.geojson
-          git commit -m "Update GeoJSON" || echo "No changes"
-          git push
+          mkdir -p output
+          curl -L "https://docs.google.com/spreadsheets/d/1z8Xg20thWKyh-LyG04MLjnKzuCgFFgdsepIvMpqOGP8/export?format=csv&gid=0" -o data.csv
+          
+          python <<EOF
+import pandas as pd, geojson, json
+
+df = pd.read_csv("data.csv")
+
+features = []
+for _, row in df.iterrows():
+    try:
+        geom = json.loads(row["geometry"])  # assumes 'geometry' column in GeoJSON format
+        feat = geojson.Feature(geometry
