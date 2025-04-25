@@ -1,15 +1,16 @@
-name: Update GeoJSON from Google Sheets
+name: Update GeoJSON from Google Sheet
 
 on:
   schedule:
-    - cron: '0 0 * * *' # daily at midnight UTC
+    - cron: '0 0 * * *'  # every day at midnight UTC
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -17,17 +18,14 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install dependencies
-        run: pip install --upgrade pip
-
       - name: Convert CSV to GeoJSON
-        run: python convert.py
-
-      - name: Commit changes
         run: |
-          git config user.name "GitHub Action"
-          git config user.email "action@github.com"
-          git add data.geojson
-          git commit -m "Update GeoJSON from Google Sheet" || echo "No changes"
-          git push
+          python convert.py
 
+      - name: Commit GeoJSON
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add data.geojson
+          git commit -m "Update GeoJSON" || echo "No changes"
+          git push
